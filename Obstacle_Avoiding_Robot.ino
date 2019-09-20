@@ -7,87 +7,84 @@
 
 
 #include <Servo.h>   // servo library including
+Servo servo1;
 
 #define trig 2      //  intialinzing trig pin
 #define echo 10     //  intialinzing echo pin
+#define Speed 100  
 
-Servo servo1;       
-
-int servopin = 11;   // servo pin
- 
-   int value;
 //-------------------------------------- L293 pinout----------------------------------------------------------------------------------------------------------------- 
-   const int motorA1      = 3;  
-   const int motorA2      = 4; 
-   const int motorB1      = 7; 
-   const int motorB2      = 8; 
+#define motorA1 3 
+#define motorA2 4 
+#define motorB1 7
+#define motorB2 8
+   
+#define servopin  11  // servo pin
+
+long distance;
+long distance_right;
+long distance_left;
+ 
 //----------------------------------------- Servo position variables---------------------------------------------------------------------------------------------------------
 
-  int center = 70;
-  int right = 0;
-  int left  = 140; 
+int center = 70;
+int right = 0;
+int left  = 140; 
 
 //----------------------------------------- Program will begin here---------------------------------------------------------------------------------------------------------
 
 void setup() {
-   servo1.attach(servopin);
-   pinMode(trig, OUTPUT);
-   pinMode(echo, INPUT);
-   Serial.begin(9600);
-
-  pinMode(motorA1, OUTPUT);
-  pinMode(motorA2, OUTPUT);
-  pinMode(motorB1, OUTPUT);
-  pinMode(motorB2, OUTPUT);
+     Serial.begin(9600);
+  
+     servo1.attach(servopin);
+     pinMode(trig, OUTPUT);
+     pinMode(echo, INPUT);
+  
+     pinMode(motorA1, OUTPUT);
+     pinMode(motorA2, OUTPUT);
+     pinMode(motorB1, OUTPUT);
+     pinMode(motorB2, OUTPUT);
 
 }
 
 void loop() {
-
-     forward();                       // car is running forward
-
      servo1.write(center);                // checking barriers
      delay(100);
-    digitalWrite(trig, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trig, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trig, LOW);
-    long t=pulseIn(echo, HIGH);
-    long cm = (t/2)/29.1;                 //display distance at serial moniter for devoloping
-    Serial.print(cm);
-
-       
-    if (cm > 35){                        // checking distances
-      forward();                         // if the distance is large than 35 allow car to run forward
-      Serial.println ("forward");
-        }
+     
+     forward();                       // car is running forward
+     distance = sensor_read();
+      if (distance > 35){                        // checking distances
+        forward();                         // if the distance is large than 35 allow car to run forward
+      }
         
           
-     if (cm < 15){
-      backward();                        // if the distance is lower than 35, run backward and stop the car 
-      delay(500);
-      Serial.println ("block");
-      st();                              
+     if (distance < 15){
+          backward();                        // if the distance is lower than 15, run backward and stop the car 
+          delay(500);
+          Stop();                              
+                                         //Measure right distance
+          servo1.write(right);
+          delay(1000);
+          distance_right = sensor_read();
+          servo1.write(left);
+          distance_left = sensor_read();                                        //Measure left distance     
+          delay(1000);
+       
+          servo1.write(center);
+    
+          if (distance_right > 70 ){                     // checking right distance
+             Tright();
+             delay(200);                                      //turning car right
+          }
+          else if(distance_left > 70){
+            Tleft();                         // checking left distance
+            delay(200);                                    //turning car right
+            }
+     }
+}
 
-         
-                                          //Measure right distance
-      servo1.write(right);
-      delay(1000);
-     digitalWrite(trig, LOW);
-     delayMicroseconds(2);
-     digitalWrite(trig, HIGH);
-     delayMicroseconds(10);
-     digitalWrite(trig, LOW);
-     long t1=pulseIn(echo, HIGH);
-     long cm1 = (t1/2)/29.1;
-     Serial.print(cm1);
-     Serial.println("right cm ");
-
-             
-                                           //Measure left distance    
-    servo1.write(left);
-    delay(1000);
+ //----------------------------------------turtle moving functions--------------------------------------------------------------------------------------------------                  
+long sensor_read(){
     digitalWrite(trig, LOW);
     delayMicroseconds(2);
     digitalWrite(trig, HIGH);
@@ -95,61 +92,44 @@ void loop() {
     digitalWrite(trig, LOW);
     long l=pulseIn(echo, HIGH);
     long cm3 = (l/2)/29.1;
-    Serial.print(cm3);
-    Serial.println("left cm ");
 
-      
-      servo1.write(center);
-
-      if (cm1 > 70 ){                     // checking right distance
-         Tright();
-         Serial.println("Tright");
-         delay(200);
-                                           //turning car right
-      }
-      else if(cm3 > 70){
-        Tleft();                         // checking left distance
-        Serial.println("Tleft");
-        delay(200);
-                                         //turning car right
-        }
-              }
-                     }
-
- //----------------------------------------turtle moving functions--------------------------------------------------------------------------------------------------                  
-
+    return cm3;
+}
 void backward(){
-   digitalWrite (motorA1,LOW);
-   digitalWrite (motorA2,HIGH);                       
-   digitalWrite (motorB1,LOW);
-   digitalWrite (motorB2,HIGH);
+   analogWrite (motorA1,0);
+   analogWrite (motorA2,Speed);                       
+   analogWrite (motorB1,0);
+   analogWrite (motorB2,Speed);
 
    }
 
   void forward(){
-  digitalWrite (motorA1,HIGH);
-   digitalWrite (motorA2,LOW);                       
-   digitalWrite (motorB1,HIGH);
-   digitalWrite (motorB2,LOW);
+   analogWrite (motorA1,Speed);
+   analogWrite (motorA2,0);                       
+   analogWrite (motorB1,Speed);
+   analogWrite (motorB2,0);
 
   }
 
 void Tleft(){
-   digitalWrite (motorA1,HIGH);
-   digitalWrite (motorA2,LOW);                       
-   digitalWrite (motorB1,LOW);
-   digitalWrite (motorB2,HIGH);
+   analogWrite (motorA1,Speed);
+   analogWrite (motorA2,0);                       
+   analogWrite (motorB1,0);
+   analogWrite (motorB2,Speed);
 
    }  
 
   void Tright(){
-   digitalWrite (motorA1,LOW);
-   digitalWrite (motorA2,HIGH);                       
-   digitalWrite (motorB1,HIGH);
-   digitalWrite (motorB2,LOW);
+   analogWrite (motorA1,0);
+   analogWrite (motorA2,Speed);                       
+   analogWrite (motorB1,Speed);
+   analogWrite (motorB2,0);
 
   }
 
-  void st(){
+  void Stop(){
+    analogWrite (motorA1,0);
+    analogWrite (motorA2,0);                       
+    analogWrite (motorB1,0);
+    analogWrite (motorB2,0);
     }
-
